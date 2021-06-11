@@ -1,0 +1,21 @@
+[Unit]
+Description=Salt Sniffer
+Requires=network.target remote-fs.target
+After=salt.target
+PartOf=salt.service
+
+[Service]
+Type=idle
+Restart=always
+RestartSec=3
+EnvironmentFile=/etc/salt-sniffer.env
+User=root
+Group=root
+ExecStart=/etc/salt-sniffer.py
+SyslogIdentifier=salt-sniffer
+StandardOutput=append:/var/log/sal-sniffer.log
+StandardError=append:/var/log/sal-sniffer.log
+
+[Install]
+WantedBy=multi-user.target
+

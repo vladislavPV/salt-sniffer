@@ -1,32 +1,19 @@
+#!/usr/bin/python3.6
 import json, time, datetime, os, fnmatch, sys
 import salt.config, salt.utils.event
 from multiprocessing import Process
 from slacker import Slacker
 
-master_conf = '/etc/salt/master'
-if os.getenv("MASTER_CONF"):
-    master_conf = os.environ['MASTER_CONF']
-
-slack_msg_limit = 4 # msg per event batch
-if os.getenv("SLACK_MSG_LIMIT"):
-    slack_msg_limit = int(os.environ["SLACK_MSG_LIMIT"])
-
-slack_channel = '#general'
-if os.getenv("SLACK_CHANNEL"):
-    slack_channel = os.environ["SLACK_CHANNEL"]
-
-exclude_users, exclude_funs, exclude_args = [], [], []
-if os.getenv("EXCLUDE_USERS"):
-    exclude_users = os.environ['EXCLUDE_USERS'].split(',')
-
-if os.getenv("EXCLUDE_FUNS"):
-    exclude_funs = os.environ['EXCLUDE_FUNS'].split(',')
-
-if os.getenv("EXCLUDE_ARGS"):
-    exclude_args = os.environ['EXCLUDE_ARGS'].split(',')
+master_conf = os.getenv("MASTER_CONF",default="/etc/salt/master")
+slack_msg_limit = int(os.getenv("SLACK_MSG_LIMIT",default=4)) # msg per event batch
+slack_channel = os.getenv("SLACK_CHANNEL",default="#general")
+exclude_users = os.getenv("EXCLUDE_USERS",default="").split(',')
+exclude_funs = os.getenv("EXCLUDE_FUNS",default="").split(',')
+exclude_args = os.getenv("EXCLUDE_ARGS",default="").split(',')
+stdout = os.getenv("STDOUT",default=False)
 
 if not os.getenv("SLACK_TOKEN"):
-    print 'Environment variable SLACK_TOKEN not set.'
+    print ('Environment variable SLACK_TOKEN not set.')
     sys.exit(1)
 token = os.environ['SLACK_TOKEN']
 
@@ -79,7 +66,10 @@ while True:
     new_event = fnmatch.fnmatch(ret['tag'], 'salt/job/*/new')
     subsequent_event = fnmatch.fnmatch(ret['tag'], 'salt/job/*/ret/*')
 
-    # print json.dumps(ret, indent=4, sort_keys=True)
+    if stdout:
+        # do not log reply from minions
+        if "cmd" not in ret["data"]:
+            print(json.dumps(ret,sort_keys=True))
 
     if new_event:
         global_dict[jid] = {}
